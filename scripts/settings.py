@@ -16,3 +16,6 @@ COLORS = {
     "white": (255, 255, 255),
     "line_color": (50, 50, 50),
 }
+
+# ぷよの落下スピード
+FALLING_SPEED = 6

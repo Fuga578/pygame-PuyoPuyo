@@ -3,6 +3,13 @@ import sys
 from scripts.settings import *
 from scripts.stage import Stage
 from scripts.utils import load_image
+from enum import Enum, auto
+
+
+class GameState(Enum):
+    START = auto()  # ゲームスタート
+    CHECK_FALL_PUYO = auto()    # 落下ぷよのチェック
+    FALL_PUYO = auto()  # ぷよの落下
 
 
 class Game:
@@ -16,6 +23,9 @@ class Game:
 
         # FPSの設定
         self.clock = pygame.time.Clock()
+
+        # ゲームの状態
+        self.game_state = GameState.START
 
         # ぷよの一覧
         self.puyo_keys = ["blue_puyo", "green_puyo", "purple_puyo", "red_puyo", "yellow_puyo"]
@@ -40,6 +50,26 @@ class Game:
 
             # ステージの描画
             self.stage.render(self.screen)
+
+            # ゲームの状態遷移
+            match self.game_state:
+                # ゲーム開始
+                case GameState.START:
+                    self.game_state = GameState.CHECK_FALL_PUYO
+                # 落下ぷよのチェック
+                case GameState.CHECK_FALL_PUYO:
+                    is_exist_falling_puyo = self.stage.check_falling_puyo()
+                    # 落下対象のぷよが存在する場合
+                    if is_exist_falling_puyo:
+                        self.game_state = GameState.FALL_PUYO
+                    else:
+                        self.game_state = ""
+                # ぷよの落下
+                case GameState.FALL_PUYO:
+                    is_falling = self.stage.fall_puyo()
+                    # ぷよの落下が終了した場合
+                    if not is_falling:
+                        self.game_state = ""
 
             # イベントの取得
             for event in pygame.event.get():

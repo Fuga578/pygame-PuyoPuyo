@@ -11,7 +11,7 @@ class Stage:
         # 盤面
         self.initial_board = [
             [1, 2, 3, 4, 5, 0],
-            [0, 1, 2, 3, 4, 5],
+            [0, 0, 2, 3, 4, 5],
             [0, 0, 0, 0, 0, 0],
             [0, 1, 1, 1, 0, 0],
             [0, 0, 0, 0, 0, 0],
@@ -26,20 +26,68 @@ class Stage:
         self.board = [[None for _ in range(STAGE_COL_NUM)] for _ in range(STAGE_ROW_NUM)]
         self._create_initial_puyo()
 
-    def set_puyo(self, x, y, puyo):
-        self.board[y][x] = puyo
+        # 落下ぷよのリスト
+        self.falling_puyo_list = []
 
-    def get_puyo(self, x, y):
+    def set_puyo(self, grid_x, grid_y, puyo):
+        self.board[grid_y][grid_x] = puyo
+
+    def get_puyo(self, grid_x, grid_y):
         # 左右、下の範囲外の場合、ダミーぷよを返す
-        if x < 0 or x >= STAGE_COL_NUM or y >= STAGE_ROW_NUM:
+        if grid_x < 0 or grid_x >= STAGE_COL_NUM or grid_y >= STAGE_ROW_NUM:
             return -1
         # 上の範囲外の場合、空白判定
-        if y < 0:
+        if grid_y < 0:
             return None
-        return self.board[y][x]
+        return self.board[grid_y][grid_x]
 
-    def remove_puyo(self, x, y):
-        self.board[y][x] = None
+    def remove_puyo(self, grid_x, grid_y):
+        self.board[grid_y][grid_x] = None
+
+    def check_falling_puyo(self):
+        self.falling_puyo_list = []
+
+        # 下の行からチェック
+        for grid_y in range(STAGE_ROW_NUM - 2, -1, -1):
+            for grid_x in range(STAGE_COL_NUM):
+                # 現在チェックマスのぷよ
+                current_puyo = self.get_puyo(grid_x, grid_y)
+                if not current_puyo:    # 空白の場合
+                    continue
+
+                # 1つ下のぷよ
+                below_puyo = self.get_puyo(grid_x, grid_y + 1)
+                if below_puyo:  # 1つ下のぷよがある場合、落下しない
+                    continue
+
+                # 該当ぷよを一度削除
+                self.remove_puyo(grid_x, grid_y)
+
+                # 最終落下y座標を算出
+                dest_grid_y = grid_y
+                while not self.get_puyo(grid_x, dest_grid_y + 1):
+                    dest_grid_y += 1
+
+                # ぷよ落下地点設定
+                current_puyo.start_fall(dest_grid_y * TILE_SIZE)
+
+                # 落下場所にぷよを配置
+                self.set_puyo(grid_x, dest_grid_y, current_puyo)
+
+                # 落下対象ぷよに追加
+                self.falling_puyo_list.append(current_puyo)
+
+        return len(self.falling_puyo_list) > 0
+
+    def fall_puyo(self):
+        is_falling = False
+
+        for falling_puyo in self.falling_puyo_list:
+            falling_puyo.fall()
+            if falling_puyo.is_falling:
+                is_falling = True
+
+        return is_falling
 
     def _create_initial_puyo(self):
         for row_index, row in enumerate(self.initial_board):
