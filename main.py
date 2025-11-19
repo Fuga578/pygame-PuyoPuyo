@@ -17,11 +17,8 @@ class Game:
         # FPSの設定
         self.clock = pygame.time.Clock()
 
-        # 盤面
-        self.stage = Stage(self)
-
         # ぷよの一覧
-        self.puyo_list = ["blue_puyo", "green_puyo", "purple_puyo", "red_puyo", "yellow_puyo"]
+        self.puyo_keys = ["blue_puyo", "green_puyo", "purple_puyo", "red_puyo", "yellow_puyo"]
 
         # アセット
         self.assets = {
@@ -31,6 +28,9 @@ class Game:
             "red_puyo": load_image("assets/img/red_puyo.png", size=(TILE_SIZE, TILE_SIZE)),
             "yellow_puyo": load_image("assets/img/yellow_puyo.png", size=(TILE_SIZE, TILE_SIZE)),
         }
+
+        # 盤面
+        self.stage = Stage(self)
 
     def run(self):
         while True:

@@ -1,5 +1,6 @@
 import pygame
 from scripts.settings import *
+from scripts.puyo import Puyo
 
 
 class Stage:
@@ -8,7 +9,7 @@ class Stage:
         self.game = game
 
         # 盤面
-        self.board = [
+        self.initial_board = [
             [1, 2, 3, 4, 5, 0],
             [0, 1, 2, 3, 4, 5],
             [0, 0, 0, 0, 0, 0],
@@ -22,8 +23,33 @@ class Stage:
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0]
         ]
+        self.board = [[None for _ in range(STAGE_COL_NUM)] for _ in range(STAGE_ROW_NUM)]
+        self._create_initial_puyo()
 
-    def _draw_grid(self, surface):
+    def set_puyo(self, x, y, puyo):
+        self.board[y][x] = puyo
+
+    def get_puyo(self, x, y):
+        # 左右、下の範囲外の場合、ダミーぷよを返す
+        if x < 0 or x >= STAGE_COL_NUM or y >= STAGE_ROW_NUM:
+            return -1
+        # 上の範囲外の場合、空白判定
+        if y < 0:
+            return None
+        return self.board[y][x]
+
+    def remove_puyo(self, x, y):
+        self.board[y][x] = None
+
+    def _create_initial_puyo(self):
+        for row_index, row in enumerate(self.initial_board):
+            for col_index, col in enumerate(row):
+                if col > 0:
+                    color_index = col - 1
+                    puyo = Puyo(self.game, color_index, (col_index * TILE_SIZE, row_index * TILE_SIZE))
+                    self.set_puyo(col_index, row_index, puyo)
+
+    def _render_grid(self, surface):
         # 縦線の描画
         for i in range(STAGE_COL_NUM):
             pygame.draw.line(
@@ -41,21 +67,15 @@ class Stage:
                 (SCREEN_WIDTH, i * TILE_SIZE)
             )
 
-    def _draw_puyo(self, surface):
-        for row_index, row in enumerate(self.board):
-            for col_index, col in enumerate(row):
-                if col != 0:
-                    puyo_key = self.game.puyo_list[col - 1]
-                    puyo_img = self.game.assets[puyo_key]
-
-                    surface.blit(
-                        puyo_img,
-                        (col_index * TILE_SIZE, row_index * TILE_SIZE)
-                    )
+    def _render_puyo(self, surface):
+        for row in self.board:
+            for puyo in row:
+                if puyo:
+                    puyo.render(surface)
 
     def render(self, surface):
         # グリッド線の描画
-        self._draw_grid(surface)
+        self._render_grid(surface)
 
         # ぷよの描画
-        self._draw_puyo(surface)
+        self._render_puyo(surface)
