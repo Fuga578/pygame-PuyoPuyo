@@ -10,6 +10,8 @@ class GameState(Enum):
     START = auto()  # ゲームスタート
     CHECK_FALL_PUYO = auto()    # 落下ぷよのチェック
     FALL_PUYO = auto()  # ぷよの落下
+    CHECK_ERASE_PUYO = auto()   # 消えるぷよのチェック
+    ERASE_PUYO = auto()     # ぷよの消去
 
 
 class Game:
@@ -63,13 +65,26 @@ class Game:
                     if is_exist_falling_puyo:
                         self.game_state = GameState.FALL_PUYO
                     else:
-                        self.game_state = ""
+                        self.game_state = GameState.CHECK_ERASE_PUYO
                 # ぷよの落下
                 case GameState.FALL_PUYO:
                     is_falling = self.stage.fall_puyo()
                     # ぷよの落下が終了した場合
                     if not is_falling:
+                        self.game_state = GameState.CHECK_ERASE_PUYO
+                # 消去ぷよのチェック
+                case GameState.CHECK_ERASE_PUYO:
+                    is_exist_erasing_puyo = self.stage.check_erasing_puyo()
+                    if is_exist_erasing_puyo:
+                        self.game_state = GameState.ERASE_PUYO
+                    else:
                         self.game_state = ""
+                # ぷよの消去
+                case GameState.ERASE_PUYO:
+                    is_erasing = self.stage.erase_puyo()
+                    # ぷよの消去が終了した場合
+                    if not is_erasing:
+                        self.game_state = GameState.CHECK_FALL_PUYO
 
             # イベントの取得
             for event in pygame.event.get():

@@ -19,3 +19,9 @@ COLORS = {
 
 # ぷよの落下スピード
 FALLING_SPEED = 6
+
+# ぷよを消す連結数
+ERASING_PUYO_COUNT = 4
+
+# ぷよ削除のフレーム数
+ERASING_PUYO_FRAMES = 30
