@@ -46,6 +46,14 @@ class Game:
             "yellow_puyo": load_image("assets/img/yellow_puyo.png", size=(TILE_SIZE, TILE_SIZE)),
         }
 
+        # 入力
+        self.inputs = {
+            "up": False,
+            "down": False,
+            "left": False,
+            "right": False,
+        }
+
         # 盤面
         self.stage = Stage(self)
 
@@ -126,6 +134,24 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit()
+                    if event.key == pygame.K_UP:
+                        self.inputs["up"] = True
+                    if event.key == pygame.K_DOWN:
+                        self.inputs["down"] = True
+                    if event.key == pygame.K_LEFT:
+                        self.inputs["left"] = True
+                    if event.key == pygame.K_RIGHT:
+                        self.inputs["right"] = True
+                # キーボード押下
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_UP:
+                        self.inputs["up"] = False
+                    if event.key == pygame.K_DOWN:
+                        self.inputs["down"] = False
+                    if event.key == pygame.K_LEFT:
+                        self.inputs["left"] = False
+                    if event.key == pygame.K_RIGHT:
+                        self.inputs["right"] = False
 
             # 更新
             pygame.display.update()

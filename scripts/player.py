@@ -72,11 +72,13 @@ class Player:
 
         return True
 
-    def _auto_fall(self):
+    def _fall(self):
         # 操作ぷよの下にぷよがない場合
         if not self.game.stage.get_puyo(self.grid_x, self.grid_y + 1) \
                 and not self.game.stage.get_puyo(self.grid_x + self.grid_dx, self.grid_y + self.grid_dy + 1):
             self.top += PLAYER_FALLING_SPEED    # 自由落下
+            if self.game.inputs["down"]:
+                self.top += PLAYER_DOWN_SPEED
             # 自由落下でマス目の境界を超えた場合、位置を下に1つずらす
             if math.floor(self.top / TILE_SIZE) != self.grid_y:
                 self.grid_y += 1
@@ -126,8 +128,8 @@ class Player:
             self.rotated_puyo.render(surface)
 
     def update(self):
-        is_auto_fall = self._auto_fall()
-        if not is_auto_fall:
+        is_fall = self._fall()
+        if not is_fall:
             return PlayerState.FIX
 
         self._set_puyo_pos()
