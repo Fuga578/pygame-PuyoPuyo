@@ -47,6 +47,7 @@ class Player:
         # カラーの決定
         center_puyo_color_index = random.randint(0, len(self.game.puyo_keys) - 1)
         rotated_puyo_color_index = random.randint(0, len(self.game.puyo_keys) - 1)
+        print(center_puyo_color_index)
 
         # 中心ぷよの位置
         self.grid_x = 2
@@ -116,7 +117,9 @@ class Player:
         ry = self.top - math.cos(self.rotation * math.pi / 180) * TILE_SIZE
 
         self.center_puyo.pos = [self.left, self.top]
+        self.center_puyo.grid_pos = [self.grid_x, self.grid_y]
         self.rotated_puyo.pos = [rx, ry]
+        self.rotated_puyo.grid_pos = [self.grid_x + self.grid_dx, self.grid_y + self.grid_dy]
 
     def fix(self):
         # 中心ぷよを固定
