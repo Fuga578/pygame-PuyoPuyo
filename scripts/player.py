@@ -9,6 +9,7 @@ from enum import Enum, auto
 class PlayerState(Enum):
     PLAYING = auto()
     FIX = auto()
+    MOVE = auto()
 
 
 class Player:
@@ -30,6 +31,10 @@ class Player:
         self.rotation = 0
 
         self.grounded_frames = 0
+
+        self.move_source_x = 0
+        self.move_dest_x = 0
+        self.moving_frame = 0
 
     def create_puyo(self):
         # ぷよを作成できるかチェック
@@ -121,6 +126,55 @@ class Player:
         if self.grid_y + self.grid_dy >= 0:
             self.game.stage.set_puyo(self.grid_x + self.grid_dx, self.grid_y + self.grid_dy, self.rotated_puyo)
 
+    def _check_move(self):
+        can_move = True
+        if self.game.inputs["left"] or self.game.inputs["right"]:
+            # 左右の確認
+            dx = -1 if self.game.inputs["left"] else 1
+            # 中心ぷよ
+            if self.game.stage.get_puyo(self.grid_x + dx, self.grid_y):
+                can_move = False
+            # 回転ぷよ
+            if self.game.stage.get_puyo(self.grid_x + self.grid_dx + dx, self.grid_y + self.grid_dy):
+                can_move = False
+
+            # 接地していない場合、さらに1つ下の左右を確認
+            if self.grounded_frames == 0:
+                # 中心ぷよ
+                if self.game.stage.get_puyo(self.grid_x + dx, self.grid_y + 1):
+                    can_move = False
+                # 回転ぷよ
+                if self.game.stage.get_puyo(self.grid_x + self.grid_dx + dx, self.grid_y + self.grid_dy + 1):
+                    can_move = False
+
+            if can_move:
+                self.move_source_x = self.grid_x * TILE_SIZE
+                self.move_dest_x = (self.grid_x + dx) * TILE_SIZE
+
+                self.grid_x += dx
+
+        return can_move
+
+    def move(self):
+        # 左右移動中も自由落下
+        self._fall()
+
+        frames_ratio = self.moving_frame / PLAYER_MOVE_FRAMES
+        frames_ratio = min(frames_ratio, 1)
+
+        self.left = (self.move_dest_x - self.move_source_x) * frames_ratio + self.move_source_x
+        self._set_puyo_pos()
+
+        self.moving_frame += 1
+
+        # 移動終了判定
+        is_moving = True
+        if frames_ratio == 1:
+            is_moving = False
+            self.moving_frame = 0
+
+        return is_moving
+
     def render(self, surface):
         if self.center_puyo:
             self.center_puyo.render(surface)
@@ -131,6 +185,11 @@ class Player:
         is_fall = self._fall()
         if not is_fall:
             return PlayerState.FIX
-
         self._set_puyo_pos()
+
+        if self.game.inputs["left"] or self.game.inputs["right"]:
+            can_move = self._check_move()
+            if can_move:
+                return PlayerState.MOVE
+
         return PlayerState.PLAYING

@@ -34,3 +34,6 @@ PLAYER_DOWN_SPEED = 10
 
 # ぷよを固定する接地フレーム
 LOCK_GROUNDED_FRAMES = 20
+
+# 操作ぷよ移動のフレーム数
+PLAYER_MOVE_FRAMES = 10

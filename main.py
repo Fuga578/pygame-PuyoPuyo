@@ -16,6 +16,7 @@ class GameState(Enum):
     CREATE_PLAYER_PUYO = auto() # 操作ぷよの作成
     PLAYING = auto()    # ぷよの操作
     FIX = auto()    # ぷよの固定
+    MOVE = auto()   # ぷよの移動
     GAME_OVER = auto()  # ゲームオーバー
 
 
@@ -119,10 +120,18 @@ class Game:
                             self.game_state = GameState.PLAYING
                         case PlayerState.FIX:
                             self.game_state = GameState.FIX
+                        case PlayerState.MOVE:
+                            self.game_state = GameState.MOVE
                 # ぷよの固定
                 case GameState.FIX:
                     self.player.fix()
                     self.game_state = GameState.CHECK_FALL_PUYO
+                # ぷよの移動
+                case GameState.MOVE:
+                    is_moving = self.player.move()
+                    # ぷよの移動が終了した場合
+                    if not is_moving:
+                        self.game_state = GameState.PLAYING
 
             # イベントの取得
             for event in pygame.event.get():
