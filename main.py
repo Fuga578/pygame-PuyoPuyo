@@ -2,6 +2,7 @@ import pygame
 import sys
 from scripts.settings import *
 from scripts.stage import Stage
+from scripts.player import Player, PlayerState
 from scripts.utils import load_image
 from enum import Enum, auto
 
@@ -12,6 +13,10 @@ class GameState(Enum):
     FALL_PUYO = auto()  # ぷよの落下
     CHECK_ERASE_PUYO = auto()   # 消えるぷよのチェック
     ERASE_PUYO = auto()     # ぷよの消去
+    CREATE_PLAYER_PUYO = auto() # 操作ぷよの作成
+    PLAYING = auto()    # ぷよの操作
+    FIX = auto()    # ぷよの固定
+    GAME_OVER = auto()  # ゲームオーバー
 
 
 class Game:
@@ -44,6 +49,9 @@ class Game:
         # 盤面
         self.stage = Stage(self)
 
+        # プレイヤー操作ぷよ
+        self.player = Player(self)
+
     def run(self):
         while True:
 
@@ -52,6 +60,9 @@ class Game:
 
             # ステージの描画
             self.stage.render(self.screen)
+
+            # プレイヤー操作ぷよの描画
+            self.player.render(self.screen)
 
             # ゲームの状態遷移
             match self.game_state:
@@ -78,13 +89,32 @@ class Game:
                     if is_exist_erasing_puyo:
                         self.game_state = GameState.ERASE_PUYO
                     else:
-                        self.game_state = ""
+                        self.game_state = GameState.CREATE_PLAYER_PUYO
                 # ぷよの消去
                 case GameState.ERASE_PUYO:
                     is_erasing = self.stage.erase_puyo()
                     # ぷよの消去が終了した場合
                     if not is_erasing:
                         self.game_state = GameState.CHECK_FALL_PUYO
+                # ぷよの作成
+                case GameState.CREATE_PLAYER_PUYO:
+                    is_created_puyo = self.player.create_puyo()
+                    if is_created_puyo:
+                        self.game_state = GameState.PLAYING
+                    else:
+                        self.game_state = GameState.GAME_OVER
+                # ぷよの操作
+                case GameState.PLAYING:
+                    next_player_state = self.player.update()
+                    match next_player_state:
+                        case PlayerState.PLAYING:
+                            self.game_state = GameState.PLAYING
+                        case PlayerState.FIX:
+                            self.game_state = GameState.FIX
+                # ぷよの固定
+                case GameState.FIX:
+                    self.player.fix()
+                    self.game_state = GameState.CHECK_FALL_PUYO
 
             # イベントの取得
             for event in pygame.event.get():

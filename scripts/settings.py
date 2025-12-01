@@ -25,3 +25,9 @@ ERASING_PUYO_COUNT = 4
 
 # ぷよ削除のフレーム数
 ERASING_PUYO_FRAMES = 30
+
+# 操作ぷよの落下スピード
+PLAYER_FALLING_SPEED = 5
+
+# ぷよを固定する接地フレーム
+LOCK_GROUNDED_FRAMES = 20
