@@ -10,6 +10,7 @@ class PlayerState(Enum):
     PLAYING = auto()
     FIX = auto()
     MOVE = auto()
+    ROTATE = auto()
 
 
 class Player:
@@ -36,6 +37,13 @@ class Player:
         self.move_dest_x = 0
         self.moving_frame = 0
 
+        self.left_before_rotate = 0
+        self.left_after_rotate = 0
+        self.rotation_before_rotate = 0
+        self.rotating_frame = 0
+
+        self.is_right_rotation = False
+
     def create_puyo(self):
         # ぷよを作成できるかチェック
         if self.game.stage.get_puyo(grid_x=2, grid_y=0):
@@ -47,7 +55,6 @@ class Player:
         # カラーの決定
         center_puyo_color_index = random.randint(0, len(self.game.puyo_keys) - 1)
         rotated_puyo_color_index = random.randint(0, len(self.game.puyo_keys) - 1)
-        print(center_puyo_color_index)
 
         # 中心ぷよの位置
         self.grid_x = 2
@@ -58,7 +65,7 @@ class Player:
         # 中心ぷよから見た回転ぷよの位置
         self.grid_dx = 0
         self.grid_dy = -1
-        self.rotation = 0
+        self.rotation = 270
 
         # ぷよの作成
         self.center_puyo = Puyo(
@@ -113,8 +120,8 @@ class Player:
                 return True
 
     def _set_puyo_pos(self):
-        rx = self.left + math.sin(self.rotation * math.pi / 180) * TILE_SIZE
-        ry = self.top - math.cos(self.rotation * math.pi / 180) * TILE_SIZE
+        rx = self.left + math.cos(self.rotation * math.pi / 180) * TILE_SIZE
+        ry = self.top + math.sin(self.rotation * math.pi / 180) * TILE_SIZE
 
         self.center_puyo.pos = [self.left, self.top]
         self.center_puyo.grid_pos = [self.grid_x, self.grid_y]
@@ -178,6 +185,119 @@ class Player:
 
         return is_moving
 
+    def _check_rotate(self):
+        can_rotate = True
+
+        if self.game.inputs["a"] or self.game.inputs["d"]:
+            self.is_right_rotation = False if self.game.inputs["a"] else True
+
+            grid_x = self.grid_x
+            grid_y = self.grid_y + (1 if self.grounded_frames == 0 else 0)  # 落下中の場合、1つ下をみる
+
+            grid_dx = 0
+            grid_dy = 0
+
+            # 右回転をチェック
+            if self.is_right_rotation:
+                if self.rotation == 0:  # 右 -> 下
+                    # 下 or 右下にぷよがあれば上に移動
+                    if self.game.stage.get_puyo(grid_x, grid_y + 1) or self.game.stage.get_puyo(grid_x + 1, grid_y + 1):
+                        grid_dy = -1
+                elif self.rotation == 90:   # 下 -> 左
+                    # 左にぷよがあれば右に移動
+                    if self.game.stage.get_puyo(grid_x - 1, grid_y):
+                        grid_dx = 1
+                        # 右にもぷよがある場合は移動できない
+                        if self.game.stage.get_puyo(grid_x + 1, grid_y):
+                            can_rotate = False
+                elif self.rotation == 180:  # 左 -> 上
+                    # 何もしない
+                    pass
+                elif self.rotation == 270:  # 上 -> 右
+                    # 右にぷよがあれば左に移動
+                    if self.game.stage.get_puyo(grid_x + 1, grid_y):
+                        grid_dx = -1
+                        # 左にもぷよがある場合は移動できない
+                        if self.game.stage.get_puyo(grid_x - 1, grid_y):
+                            can_rotate = False
+            # 左回転をチェック
+            else:
+                if self.rotation == 0:  # 右 -> 上
+                    # 何もしない
+                    pass
+                elif self.rotation == 270:  # 上 -> 左
+                    # 左にぷよがあれば右に移動
+                    if self.game.stage.get_puyo(grid_x - 1, grid_y):
+                        grid_dx = 1
+                        # 右にもぷよがある場合は移動できない
+                        if self.game.stage.get_puyo(grid_x + 1, grid_y):
+                            can_rotate = False
+                elif self.rotation == 180:  # 左 -> 下
+                    # 下 or 左下にぷよがあれば上に移動
+                    if self.game.stage.get_puyo(grid_x, grid_y + 1) or self.game.stage.get_puyo(grid_x - 1, grid_y + 1):
+                        grid_dy = -1
+                elif self.rotation == 90:  # 下 -> 右
+                    # 右にぷよがあれば左に移動
+                    if self.game.stage.get_puyo(grid_x + 1, grid_y):
+                        grid_dx = -1
+                        # 左にもぷよがある場合は移動できない
+                        if self.game.stage.get_puyo(grid_x - 1, grid_y):
+                            can_rotate = False
+
+            if can_rotate:
+                # 上に移動時のみ一気にあげる
+                if grid_dy == -1:
+                    # 設置している場合1段上に移動
+                    if self.grounded_frames > 0:
+                        self.grid_y += grid_dy
+                        self.grounded_frames = 0
+                    self.top = self.grid_y * TILE_SIZE
+
+                # 回転前後の情報をセット
+                self.left_before_rotate = grid_x * TILE_SIZE
+                self.left_after_rotate = (grid_x + grid_dx) * TILE_SIZE
+                self.rotation_before_rotate = self.rotation
+
+                # 次の状態をセット
+                self.grid_x += grid_dx
+                if self.is_right_rotation:
+                    next_rotation = int((self.rotation + 90) % 360)
+                else:
+                    next_rotation = int((self.rotation - 90) % 360)
+                vecs = {
+                    0: (1, 0),  # 右
+                    90: (0, 1),  # 下
+                    180: (-1, 0),  # 左
+                    270: (0, -1),  # 上
+                }
+                self.grid_dx, self.grid_dy = vecs[next_rotation]
+
+        return can_rotate
+
+    def rotate(self):
+        # 回転中も自由落下
+        self._fall()
+
+        frames_ratio = self.rotating_frame / PLAYER_ROTATE_FRAMES
+        frames_ratio = min(frames_ratio, 1)
+
+        self.left = (self.left_after_rotate - self.left_before_rotate) * frames_ratio + self.left_before_rotate
+        if self.is_right_rotation:
+            self.rotation = (self.rotation_before_rotate + frames_ratio * 90) % 360
+        else:
+            self.rotation = (self.rotation_before_rotate - frames_ratio * 90) % 360
+        self._set_puyo_pos()
+
+        self.rotating_frame += 1
+
+        # 回転終了判定
+        is_rotating = True
+        if frames_ratio == 1:
+            is_rotating = False
+            self.rotating_frame = 0
+
+        return is_rotating
+
     def render(self, surface):
         if self.center_puyo:
             self.center_puyo.render(surface)
@@ -194,5 +314,9 @@ class Player:
             can_move = self._check_move()
             if can_move:
                 return PlayerState.MOVE
+        elif self.game.inputs["a"] or self.game.inputs["d"]:
+            can_rotate = self._check_rotate()
+            if can_rotate:
+                return PlayerState.ROTATE
 
         return PlayerState.PLAYING

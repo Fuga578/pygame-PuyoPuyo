@@ -37,3 +37,6 @@ LOCK_GROUNDED_FRAMES = 20
 
 # 操作ぷよ移動のフレーム数
 PLAYER_MOVE_FRAMES = 10
+
+# 操作ぷよ回転のフレーム数
+PLAYER_ROTATE_FRAMES = 10

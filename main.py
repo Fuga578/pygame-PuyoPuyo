@@ -17,6 +17,7 @@ class GameState(Enum):
     PLAYING = auto()    # ぷよの操作
     FIX = auto()    # ぷよの固定
     MOVE = auto()   # ぷよの移動
+    ROTATE = auto() # ぷよの回転
     GAME_OVER = auto()  # ゲームオーバー
 
 
@@ -53,6 +54,8 @@ class Game:
             "down": False,
             "left": False,
             "right": False,
+            "a": False,
+            "d": False,
         }
 
         # 盤面
@@ -122,6 +125,8 @@ class Game:
                             self.game_state = GameState.FIX
                         case PlayerState.MOVE:
                             self.game_state = GameState.MOVE
+                        case PlayerState.ROTATE:
+                            self.game_state = GameState.ROTATE
                 # ぷよの固定
                 case GameState.FIX:
                     self.player.fix()
@@ -131,6 +136,12 @@ class Game:
                     is_moving = self.player.move()
                     # ぷよの移動が終了した場合
                     if not is_moving:
+                        self.game_state = GameState.PLAYING
+                # ぷよの回転
+                case GameState.ROTATE:
+                    is_rotating = self.player.rotate()
+                    # ぷよの回転が終了した場合
+                    if not is_rotating:
                         self.game_state = GameState.PLAYING
 
             # イベントの取得
@@ -151,6 +162,10 @@ class Game:
                         self.inputs["left"] = True
                     if event.key == pygame.K_RIGHT:
                         self.inputs["right"] = True
+                    if event.key == pygame.K_a:
+                        self.inputs["a"] = True
+                    if event.key == pygame.K_d:
+                        self.inputs["d"] = True
                 # キーボード押下
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_UP:
@@ -161,6 +176,10 @@ class Game:
                         self.inputs["left"] = False
                     if event.key == pygame.K_RIGHT:
                         self.inputs["right"] = False
+                    if event.key == pygame.K_a:
+                        self.inputs["a"] = False
+                    if event.key == pygame.K_d:
+                        self.inputs["d"] = False
 
             # 更新
             pygame.display.update()
